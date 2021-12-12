@@ -26,9 +26,9 @@ float integral (float functionid, float a, float b, int n, int intensity, int nb
   float f=0;
   float difference = (b-a);
   float c = difference/n;
-  std::vector <float> fvector;
+  std::vector <float> fvec;
 
-  s.parfor<float(0,n,1,[&]float& function) -> void
+  s.parfor<float(0,n,1,[&](float& function) -> void
   {
     function = 0;
   }, [&] (int i, float& function) -> void
