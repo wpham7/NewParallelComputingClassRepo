@@ -6,7 +6,6 @@
 #include <thread>
 #include <iostream>
 #include <mutex>
-
 #include <fstream>
 #include <string>
 
@@ -117,7 +116,7 @@ public:
   template<typename TLS>
   void taskPool(int &start, TLS &tls, std::function<void(int, TLS&)> f, int increment, bool &taskStatus){
     int end = start + granularity;
-    for (size_t i=start; i<end; i+= increment){	                  
+    for (size_t i = start; i < end; i += increment){	                  
         f(i, tls);
     }
     taskStatus = true;
