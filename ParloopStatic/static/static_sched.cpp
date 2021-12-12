@@ -28,7 +28,7 @@ float integral (float functionid, float a, float b, int n, int intensity, int nb
   float c = difference/n;
   std::vector <float> fvec;
 
-  s.parfor<float(0,n,1,[&](float& function) -> void
+  s.parfor<float>(0,n,1,[&](float& function) -> void
   {
     function = 0;
   }, [&] (int i, float& function) -> void
@@ -59,7 +59,7 @@ int main (int argc, char* argv[]) {
     std::cerr<<"usage: "<<argv[0]<<" <functionid> <a> <b> <n> <intensity> <nbthreads>"<<std::endl;
     return -1;
   }
-  float function = atoi(argv[1]);
+  float functionid = atoi(argv[1]);
   float a = strtof(argv[2],NULL);
   float b = strtof(argv[3],NULL);
   int n = atoi(argv[4]);
