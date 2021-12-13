@@ -77,7 +77,7 @@ public:
       before(tlsVec[k]);
     }
 
-    for(int t=0; t<nbthread; t++){
+    for(int t=0; t<n; t++){
         
 
       threadVec.push_back(std::thread([&](int &taskComplete) {   
