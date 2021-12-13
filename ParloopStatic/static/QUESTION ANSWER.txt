@@ -1,0 +1,3 @@
+Does the sppedup you achieve look right? 
+
+Yes, adding more threads has increased the speedup throughout all of the different intensity levels. 
