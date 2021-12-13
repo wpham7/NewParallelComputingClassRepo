@@ -26,7 +26,7 @@ float calculateIntegral(float functionId, float a, float b, int n, int intensity
   float firstPartOfEquation = (float)(b-a)/n;
   float functionResponse = 0;
   std::vector<float> functionResponseVec;
-  sl.parfor<float>(0, n, 1, 
+  sl.parfor<float>(0, nbthreads, 1, 
     [&](float& tls) -> void{
 		   tls = 0;
 		},
@@ -84,11 +84,11 @@ int main (int argc, char* argv[]) {
   int nbthreads = charToFloatConv(argv[6]);
   int granularity = charToFloatConv(argv[7]);
 
-  auto start =std::chrono::steady_clock::now();
+  auto start = std::chrono::steady_clock::now();
 
   float response = (float) calculateIntegral(functionId, a, b, n, intensity, nbthreads, granularity);
   
-   auto stop = std::chrono::steady_clock::now();
+  auto stop = std::chrono::steady_clock::now();
   std::chrono::duration<double> difference = stop-start;
 
   std::cout<< response<<std::endl;
