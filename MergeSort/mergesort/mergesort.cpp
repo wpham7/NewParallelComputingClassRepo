@@ -1,133 +1,168 @@
+#include <omp.h>
 #include <stdio.h>
+#include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <iostream>
 #include <unistd.h>
-#include <omp.h>
+#include <algorithm>
 #include <chrono>
+
+#define DEBUG 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
   void generateMergeSortData (int* arr, size_t n);
   void checkMergeSortResult (int* arr, size_t n);
+  
 #ifdef __cplusplus
 }
 #endif
 
-void merge(int * arr, int l, int mid, int r) {
-  
-#if DEBUG
-  std::cout<<l<<" "<<mid<<" "<<r<<std::endl;
-#endif
 
-  // short circuits
-  if (l == r) return;
-  if (r-l == 1) {
-    if (arr[l] > arr[r]) {
-      int temp = arr[l];
-      arr[l] = arr[r];
-      arr[r] = temp;
-    }
-    return;
-  }
+void merge(int * arr, int start, int mid, int end, int * temp) {
 
-  int i, j, k;
-  int n = mid - l;
-  
-  // declare and init temp arrays
-  int *temp = new int[n];
-  for (i=0; i<n; ++i)
-    temp[i] = arr[l+i];
+	if (start == end) return;
 
-  i = 0;    // temp left half
-  j = mid;  // right half
-  k = l;    // write to 
+	if (end-start == 1) {
+		if (arr[start] > arr[end]) {
+			int temp = arr[start];
+			arr[start] = arr[end];
+			arr[end] = temp;
+		}
+		return;
+	}
 
-  // merge
-  while (i<n && j<=r) {
-    if (temp[i] <= arr[j] ) {
-      arr[k++] = temp[i++];
-    } else {
-      arr[k++] = arr[j++];
-    }
-  }
+	int i, j, k;
 
-  // exhaust temp 
-  while (i<n) {
-    arr[k++] = temp[i++];
-  }
+	int n = mid - start;
 
-  // de-allocate structs used
-  delete[] temp;
+	
+	for (i=0; i<n; ++i){
+	    temp[start+i] = arr[start+i];
+        }
+
+	i = 0;
+	j = mid;
+	k = start;
+
+	while (i<n && j<=end) {
+		if (temp[start+i] <= arr[j] ) {
+			arr[k++] = temp[start+i];
+			i++;
+		} else {
+			arr[k++] = arr[j++];
+		}
+	}
+
+
+	while (i<n) {
+		arr[k++] = temp[start+i];
+		i++;
+	}
 
 }
 
 
-void mergesort(int * arr, int l, int r) {
+void mergesort(int * arr, int start, int end, int n, int * temp) {
+	long g = 250;
+	
+	if(n<=250)
+		g = 250;
+	else if(n<1000 && n>=250){
+		g = 5*n*0.1;
+            }
+	else if(n>=1000 && n < 100000){
+		g = 5*n*0.01;
+            }
+	else if(n==100000){
+		g = 5*n*0.01;
+            }
+	else if( n==1000000){
+		g = 5*n*0.001;
+            }
+	else if( n==10000000){
+		g = 5*n*0.0001;
+            }
+	else 
+		g = 5000;
+	
 
-  if (l < r) {
-    int mid = (l+r)/2;
-
-    #pragma omp parallel 
-    {
-        #pragma omp single
-      {
-            #pragma omp task
-	mergesort(arr, l, mid);
-
-            #pragma omp task
-	mergesort(arr, mid+1, r);
-
-            #pragma omp taskwait
-	merge(arr, l, mid+1, r);
-      }
-    } 
-    
-  }
-
+	if (end-start > g) {
+		int mid = (start+end)/2;
+		
+		#pragma omp task
+		mergesort(arr, start, mid, n, temp);
+		
+		#pragma omp task
+		mergesort(arr, mid+1, end, n, temp);
+		
+		#pragma omp taskwait
+		merge(arr, start, mid+1, end, temp);
+	}
+	else
+	{
+		if (start < end) {
+		    int mid = (start+end)/2;
+		    mergesort(arr, start, mid, n, temp);
+		    mergesort(arr, mid+1, end, n, temp);
+		    merge(arr, start, mid+1, end,temp);
+		}
+	}
 }
+
 
 int main (int argc, char* argv[]) {
-  
-  if (argc < 3) { std::cerr<<"Usage: "<<argv[0]<<" <n> <nbthreads>"<<std::endl;
-    return -1;
-  }
 
-  int n = atoi(argv[1]);
-  int nbthread = atoi(argv[2]);
+	#pragma omp parallel
+	{
+		int fd = open (argv[0], O_RDONLY);
+		if (fd != -1) {
+			close (fd);
+		}
+		else {
+			std::cerr<<"something is amiss"<<std::endl;
+		}
+	}
 
-  omp_set_num_threads(nbthread);
-  
-  // get arr data
-  int * arr = new int [n];
+	if (argc < 3) { std::cerr<<"usage: "<<argv[0]<<" <n> <nbthreads>"<<std::endl;
+		return -1;
+	}
 
-  int * tempArr = new int[n];
 
-  generateMergeSortData (arr, n);
 
-  //insert sorting code here.
+	
+	int nbthreads = atoi(argv[2]);
+	omp_set_num_threads(nbthreads);
+	long n;
+	n = atol(argv[1]);
 
-  std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
+	int * arr = new int [n];
+	int * temp = new int [n];
+	generateMergeSortData (arr, n);
 
-  #pragma omp parallel
-  {
-    #pragma omp single
-    {
-      mergesort(arr, 0, n-1); //call mergesort
-    }
-  }
 
-  std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-  std::chrono::duration<double> elpased_seconds = end-start;
 
-  
-  checkMergeSortResult (arr, n);
-  std::cerr<<elpased_seconds.count()<<std::endl;
-  
+	std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
-  delete[] arr;
+	#pragma omp parallel
+	{
+		#pragma omp single
+		{
+			mergesort(arr, 0, n-1, n, temp );
+		}
+	}
 
-  return 0;
+	std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elpased_seconds = end-start;
+
+	std::cerr<<elpased_seconds.count()<<std::endl;
+	checkMergeSortResult(arr, n);
+
+	delete[] arr;
+	delete[] temp;
+
+	return 0;
 }
